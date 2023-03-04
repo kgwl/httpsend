@@ -45,6 +45,12 @@ def get(url, http_choice: str):
     return result
 
 
+def save(filename, content):
+    file = open(filename, 'w')
+    file.write(content)
+    file.close()
+
+
 def main():
     pass
 
