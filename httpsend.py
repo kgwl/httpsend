@@ -51,6 +51,30 @@ def save(filename, content):
     file.close()
 
 
+def read_urls(filename: str):
+    """
+    Reads urls from file and return as list
+
+    Parameters:
+    -----------
+    filename:
+        full path to file with url
+
+    -----------
+    Returns:
+        list: List of urls from file
+
+
+    """
+    result = []
+    file = open(filename)
+    for line in file.readlines():
+        line = line.replace('\n', '')
+        result.append(line)
+    file.close()
+    return result
+
+
 def main():
     pass
 
