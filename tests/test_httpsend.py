@@ -10,6 +10,7 @@ class TestHttpsend(TestCase):
 
     def setUp(self):
         self.url = 'https://example.com'
+        self.filename = 'input-files/test_read_urls.txt'
 
     def test_get_type(self):
         self.response = httpsend.get(url=self.url, http_choice='all')
@@ -21,8 +22,8 @@ class TestHttpsend(TestCase):
 
     def test_save(self):
         directory = 'output-files/'
-        filename = base64.b64encode(self.url.encode('utf-8')).decode()
-        path = directory + filename
+        output_filename = base64.b64encode(self.url.encode('utf-8')).decode()
+        path = directory + output_filename
         content = ''.join([random.choice(string.ascii_lowercase) for _ in range(10)])
 
         httpsend.save(path, content)
@@ -34,27 +35,23 @@ class TestHttpsend(TestCase):
         self.assertEqual(result, content)
 
     def test_read_urls_file(self):
-        filename = 'input-files/test_read_urls.txt'
-        urls = httpsend.read_urls(filename)
+        urls = httpsend.read_urls(self.filename)
         self.assertEqual(type(urls), list)
         self.assertEqual(urls[0], 'https://example.com')
         self.assertEqual(urls[1], 'https://google.com')
 
     @patch('builtins.open')
     def test_read_urls_open(self, mock_system):
-        filename = 'input-files/test_read_urls.txt'
-        httpsend.read_urls(filename)
+        httpsend.read_urls(self.filename)
         mock_system.assert_called()
 
     def test_read_urls_single_url(self):
-        url = 'https://example.com'
-        urls = httpsend.read_urls(url)
+        urls = httpsend.read_urls(self.url)
         self.assertEqual(len(urls), 1)
-        self.assertEqual(urls[0], url)
+        self.assertEqual(urls[0], self.url)
 
     def test_is_url_true(self):
-        url = 'https://example.com'
-        result = httpsend.is_url(url)
+        result = httpsend.is_url(self.url)
         self.assertTrue(result)
 
     def test_is_url_false(self):
