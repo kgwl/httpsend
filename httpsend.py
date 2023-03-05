@@ -3,11 +3,11 @@ import argparse
 import validators
 
 
-def parse_args():
+def get_parser():
     """
     Parse command line arguments
     --------
-    Returns:b
+    Returns:
         argparse: Command line arguments
     """
 
@@ -19,6 +19,12 @@ def parse_args():
         '-u',
         '--url',
         help='Target URL'
+    )
+
+    parser.add_argument(
+        '-f',
+        '--file',
+        help='File witch target URLs'
     )
 
     parser.add_argument(
@@ -37,7 +43,7 @@ def parse_args():
         help='HTTP element to save. All element are saved by default'
     )
 
-    return parser.parse_args()
+    return parser
 
 
 def get(url, http_choice: str):
@@ -51,7 +57,6 @@ def get(url, http_choice: str):
 
     http_choice:
         What element of http should be return (cookies, headers, text or all of them).
-        nargs=1,
     -----------
     Returns:
         dictionary: Selected http elements (cookies, headers,  text).
@@ -125,10 +130,37 @@ def is_url(url: str):
     url:
         URL address to validate
 
+    -----------
     Returns:
-        bool: True if URL is valid
+         bool: True if URL is valid
     """
     return validators.url(url)
+
+
+def args_filter(parser, single_url, url_file):
+    """
+    From URL and FILE argument choose one which is not null. If both arguments are provided then program exits with
+    an error.
+
+    Parameters:
+    -----------
+    parser:
+        ArgumentParser object
+
+    single_url:
+        URL parameter
+
+    url_file:
+        FILE parameter
+
+    -----------
+    Returns:
+        str: Argument that is not null
+    """
+    if single_url is not None and url_file is not None:
+        parser.error('You cannot pass [-u URL] and [-f FILE] arguments together')
+
+    return single_url if single_url is not None else url_file
 
 
 def main():
