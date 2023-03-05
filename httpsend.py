@@ -1,4 +1,43 @@
 import requests
+import argparse
+import validators
+
+
+def parse_args():
+    """
+    Parse command line arguments
+    --------
+    Returns:b
+        argparse: Command line arguments
+    """
+
+    parser = argparse.ArgumentParser(
+        description='Send many http requests and save to files'
+    )
+
+    parser.add_argument(
+        '-u',
+        '--url',
+        help='Target URL'
+    )
+
+    parser.add_argument(
+        '-X',
+        '--method',
+        default='GET',
+        choices=['GET'],
+        help='HTTP method to use'
+    )
+
+    parser.add_argument(
+        '-E',
+        '--element',
+        choices=['text', 'headers', 'cookies'],
+        default='all',
+        help='HTTP element to save. All element are saved by default'
+    )
+
+    return parser.parse_args()
 
 
 def get(url, http_choice: str):
@@ -12,13 +51,12 @@ def get(url, http_choice: str):
 
     http_choice:
         What element of http should be return (cookies, headers, text or all of them).
-
+        nargs=1,
     -----------
     Returns:
         dictionary: Selected http elements (cookies, headers,  text).
-
-
     """
+
     response = requests.get(url=url)
     headers_result = ''
     cookies_result = ''
@@ -63,16 +101,34 @@ def read_urls(filename: str):
     -----------
     Returns:
         list: List of urls from file
-
-
     """
+
     result = []
-    file = open(filename)
-    for line in file.readlines():
-        line = line.replace('\n', '')
-        result.append(line)
-    file.close()
+    try:
+        file = open(filename)
+        for line in file.readlines():
+            line = line.replace('\n', '')
+            result.append(line)
+        file.close()
+    except FileNotFoundError:
+        result.append(filename)
+
     return result
+
+
+def is_url(url: str):
+    """
+    Checks if the URL is correct
+
+    Parameters:
+    -----------
+    url:
+        URL address to validate
+
+    Returns:
+        bool: True if URL is valid
+    """
+    return validators.url(url)
 
 
 def main():
