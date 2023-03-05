@@ -1,3 +1,4 @@
+import base64
 import requests
 import argparse
 import validators
@@ -163,8 +164,27 @@ def args_filter(parser, single_url, url_file):
     return single_url if single_url is not None else url_file
 
 
+def save_response(url, method, response):
+    filename = base64.b64encode(url.encode('utf-8')).decode()
+    for key in response.keys():
+        name = filename + '.' + method + '.' + key
+        save(name, response[key])
+
+
 def main():
-    pass
+    parser = get_parser()
+    args = parser.parse_args()
+    element = args.element
+    method = args.method
+    filename = args_filter(parser, args.url, args.file)
+    urls = read_urls(filename)
+    for url in urls:
+        if not is_url(url):
+            continue
+
+        if method == 'GET':
+            result = get(url, element)
+            save_response(url, method, result)
 
 
 if __name__ == '__main__':
