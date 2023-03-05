@@ -1,4 +1,5 @@
 import base64
+import os
 from unittest import TestCase
 from unittest.mock import patch
 import httpsend
@@ -8,9 +9,17 @@ import string
 
 class TestHttpsend(TestCase):
 
-    def setUp(self):
-        self.url = 'https://example.com'
-        self.filename = 'input-files/test_read_urls.txt'
+    dirs_to_remove = []
+
+    @classmethod
+    def setUpClass(cls):
+        cls.url = 'https://example.com'
+        cls.filename = 'input-files/test_read_urls.txt'
+
+    @classmethod
+    def tearDownClass(cls):
+        for dir_name in cls.dirs_to_remove:
+            os.removedirs(dir_name)
 
     def test_get_type(self):
         self.response = httpsend.get(url=self.url, http_choice='all')
@@ -27,7 +36,6 @@ class TestHttpsend(TestCase):
         content = ''.join([random.choice(string.ascii_lowercase) for _ in range(10)])
 
         httpsend.save(path, content)
-
         file = open(path, 'r')
         result = file.read()
         file.close()

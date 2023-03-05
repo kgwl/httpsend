@@ -2,6 +2,8 @@ import base64
 import requests
 import argparse
 import validators
+import os
+import re
 
 
 def get_parser():
@@ -162,6 +164,21 @@ def args_filter(parser, single_url, url_file):
         parser.error('You cannot pass [-u URL] and [-f FILE] arguments together')
 
     return single_url if single_url is not None else url_file
+
+
+def create_output_directory(path: str = None):
+    dir_name = 'httpsend-output'
+    path = os.path.abspath('.') if path is None else path
+    path = path + '/' + dir_name
+
+    file_id = 0
+    tmp_path = path
+    while os.path.exists(path):
+        file_id += 1
+        path = tmp_path + str(file_id)
+
+    os.makedirs(path)
+    return path
 
 
 def save_response(url, method, response):
