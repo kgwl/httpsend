@@ -192,6 +192,7 @@ def save_response(url, path, method, response):
 
     for key in response.keys():
         name = filename + '.' + method + '.' + key
+        print('saved  ', name)
         save(name, response[key])
 
 
@@ -205,6 +206,7 @@ def main():
     path = create_output_directory(args.dir)
     for url in urls:
         if not is_url(url):
+            print('\033[91m' + url + ' is not valid' + '\033[0m')
             continue
 
         if method == 'GET':
