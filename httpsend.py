@@ -3,7 +3,6 @@ import requests
 import argparse
 import validators
 import os
-import re
 
 
 def get_parser():
@@ -44,6 +43,12 @@ def get_parser():
         choices=['text', 'headers', 'cookies'],
         default='all',
         help='HTTP element to save. All element are saved by default'
+    )
+
+    parser.add_argument(
+        '-d',
+        '--dir',
+        help='Output directory'
     )
 
     return parser
@@ -181,8 +186,10 @@ def create_output_directory(path: str = None):
     return path
 
 
-def save_response(url, method, response):
-    filename = base64.b64encode(url.encode('utf-8')).decode()
+def save_response(url, path, method, response):
+    filename = base64.urlsafe_b64encode(url.encode('utf-8')).decode()
+    filename = path + '/' + filename
+
     for key in response.keys():
         name = filename + '.' + method + '.' + key
         save(name, response[key])
@@ -195,13 +202,14 @@ def main():
     method = args.method
     filename = args_filter(parser, args.url, args.file)
     urls = read_urls(filename)
+    path = create_output_directory(args.dir)
     for url in urls:
         if not is_url(url):
             continue
 
         if method == 'GET':
             result = get(url, element)
-            save_response(url, method, result)
+            save_response(url, path, method, result)
 
 
 if __name__ == '__main__':
