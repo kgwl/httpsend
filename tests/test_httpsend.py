@@ -66,3 +66,32 @@ class TestHttpsend(TestCase):
         url = 'test'
         result = httpsend.is_url(url)
         self.assertFalse(result)
+
+    def test_create_output_directory(self):
+        # Make sure that all 'httpsend-output' directories in test directory are removed
+        dir_name = os.path.abspath('.') + '/' + 'httpsend-output'
+        result = httpsend.create_output_directory()
+        self.dirs_to_remove.append(dir_name)
+
+        self.assertEqual(result, dir_name)
+
+    def test_create_output_directory_path(self):
+        # Make sure that all 'httpsend-output' directories in test directory are removed
+        dr = os.path.abspath('output-files')
+        dir_name = dr + '/' + 'httpsend-output'
+        result = httpsend.create_output_directory(dr)
+        self.dirs_to_remove.append(dir_name)
+        self.assertEqual(result, dir_name)
+
+    def test_create_output_directory_multiple_output(self):
+        dr = os.path.abspath('test-multiple-output')
+        dir_name1 = dr + '/' + 'httpsend-output'
+        dir_name2 = dr + '/' + 'httpsend-output1'
+        result1 = httpsend.create_output_directory(dr)
+        result2 = httpsend.create_output_directory(dr)
+
+        self.dirs_to_remove.append(dir_name1)
+        self.dirs_to_remove.append(dir_name2)
+
+        self.assertEqual(result1, dir_name1)
+        self.assertEqual(result2, dir_name2)
