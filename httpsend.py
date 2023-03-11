@@ -1,5 +1,5 @@
 from urllib.parse import urlparse
-import base64
+import urllib3
 import requests
 import argparse
 import validators
@@ -71,7 +71,7 @@ def get(url, http_choice: str):
         dictionary: Selected http elements (cookies, headers,  text).
     """
 
-    response = requests.get(url=url)
+    response = requests.get(url=url, verify=False)
     headers_result = ''
     cookies_result = ''
     text_result = ''
@@ -223,6 +223,7 @@ def save_response(url, path, method, response):
     domain = url.netloc
     url_path = url.path.replace('/', '_')
     filename = path + '/' + domain + url_path
+    filename = os.path.abspath(filename)
 
     for key in response.keys():
         name = filename + '.' + method + '.' + key
@@ -238,6 +239,7 @@ def main():
     filename = args_filter(parser, args.url, args.file)
     urls = read_urls(filename)
     path = create_output_directory(args.dir)
+    urllib3.disable_warnings()
     for url in urls:
         if not is_url(url):
             print('\033[91m' + url + ' is not valid' + '\033[0m')
