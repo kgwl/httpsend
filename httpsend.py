@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 import base64
 import requests
 import argparse
@@ -172,6 +173,19 @@ def args_filter(parser, single_url, url_file):
 
 
 def create_output_directory(path: str = None):
+    """
+    Creates directory to store program output
+
+    Parameters:
+    -----------
+    path:
+        Path where directory should be created
+
+    -----------
+    Returns:
+        str: Full path to the created directory
+    """
+
     dir_name = 'httpsend-output'
     path = os.path.abspath('.') if path is None else path
     path = path + '/' + dir_name
@@ -187,8 +201,28 @@ def create_output_directory(path: str = None):
 
 
 def save_response(url, path, method, response):
-    filename = base64.urlsafe_b64encode(url.encode('utf-8')).decode()
-    filename = path + '/' + filename
+    """
+    Save response to file
+
+    Parameters:
+    -----------
+    url:
+        response URL
+
+    path:
+        Full path to save file
+
+    method:
+        used http method
+
+    response:
+        HTTP response
+
+    """
+    url = urlparse(url)
+    domain = url.netloc
+    url_path = url.path.replace('/', '_')
+    filename = path + '/' + domain + url_path
 
     for key in response.keys():
         name = filename + '.' + method + '.' + key
