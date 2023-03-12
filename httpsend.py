@@ -17,35 +17,45 @@ def get_parser():
 
     parser = argparse.ArgumentParser(
         prog='httpsend',
-        description='Send many http requests and save to files'
+        description='Send many http requests and save to files',
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50),
+        add_help=False
     )
 
     filter_options = parser.add_argument_group('filter options')
     match_options = parser.add_argument_group('match options')
 
     parser.add_argument(
+        '-h',
+        action='help',
+        default=argparse.SUPPRESS,
+        help='Show this help message and exit')
+
+    parser.add_argument(
         '-u',
-        '--url',
+        dest='url',
+        metavar='URL',
         help='Target URL'
     )
 
     parser.add_argument(
         '-f',
-        '--file',
-        help='File witch target URLs'
+        metavar='FILE',
+        dest='file',
+        help='File with target URLs'
     )
 
     parser.add_argument(
         '-X',
-        '--method',
+        dest='method',
         default='GET',
         choices=['GET'],
-        help='HTTP method to use'
+        help='HTTP method to use. Default: GET'
     )
 
     parser.add_argument(
         '-E',
-        '--element',
+        dest='element',
         choices=['text', 'headers', 'cookies'],
         default='all',
         help='HTTP element to save. All element are saved by default'
@@ -53,23 +63,22 @@ def get_parser():
 
     parser.add_argument(
         '-d',
-        '--dir',
+        dest='dir',
+        metavar='DIR',
         help='Output directory'
     )
 
     filter_options.add_argument(
         '-fs',
-        '--exclude-status-code',
+        metavar='CODE',
         dest='exclude_status_code',
-        metavar='',
         help='Exclude HTTP status code. Comma separated list or range e.q 200,300-400. Overrides match-status-code'
     )
 
     match_options.add_argument(
         '-ms',
-        '--match-status-code',
+        metavar='CODE',
         dest='match_status_code',
-        metavar='',
         help='Match HTTP status codes. Comma separated list or range e.q 200,300-400.'
     )
 
@@ -306,7 +315,6 @@ def main():
     urls = read_urls(filename)
     path = create_output_directory(args.dir)
     urllib3.disable_warnings()
-    filter_status_codes(200,  status_codes)
     for url in urls:
         if not is_url(url):
             print('\033[91m' + url + ' is not valid' + '\033[0m')
