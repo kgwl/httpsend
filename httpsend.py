@@ -4,6 +4,7 @@ import requests
 import argparse
 import validators
 import os
+from http import HTTPStatus
 
 
 def get_parser():
@@ -15,8 +16,12 @@ def get_parser():
     """
 
     parser = argparse.ArgumentParser(
+        prog='httpsend',
         description='Send many http requests and save to files'
     )
+
+    filter_options = parser.add_argument_group('filter options')
+    match_options = parser.add_argument_group('match options')
 
     parser.add_argument(
         '-u',
@@ -52,6 +57,22 @@ def get_parser():
         help='Output directory'
     )
 
+    filter_options.add_argument(
+        '-fs',
+        '--exclude-status-code',
+        dest='exclude_status_code',
+        metavar='',
+        help='Exclude HTTP status code. Comma separated list or range e.q 200,300-400. Overrides match-status-code'
+    )
+
+    match_options.add_argument(
+        '-ms',
+        '--match-status-code',
+        dest='match_status_code',
+        metavar='',
+        help='Match HTTP status codes. Comma separated list or range e.q 200,300-400.'
+    )
+
     return parser
 
 
@@ -75,6 +96,7 @@ def get(url, http_choice: str):
     headers_result = ''
     cookies_result = ''
     text_result = ''
+    status_code = response.status_code
 
     if http_choice == 'headers' or http_choice == 'all':
         headers = response.headers
@@ -89,7 +111,7 @@ def get(url, http_choice: str):
     if http_choice == 'text' or http_choice == 'all':
         text_result += response.text
 
-    result = {'headers': headers_result, 'cookies': cookies_result, 'text': text_result}
+    result = {'headers': headers_result, 'cookies': cookies_result, 'text': text_result, 'status_code': status_code}
     for key, value in result.copy().items():
         if value == '':
             del result[key]
@@ -207,7 +229,7 @@ def save_response(url, path, method, response):
     Parameters:
     -----------
     url:
-        response URL
+        response URL7
 
     path:
         Full path to save file
@@ -224,11 +246,54 @@ def save_response(url, path, method, response):
     url_path = url.path.replace('/', '_')
     filename = path + '/' + domain + url_path
     filename = os.path.abspath(filename)
+    status_code = response['status_code']
+    del response['status_code']
 
     for key in response.keys():
         name = filename + '.' + method + '.' + key
-        print('saved  ', name)
+        print('[' + str(status_code) + '] saved  ', name)
         save(name, response[key])
+
+
+def filter_status_codes(response_status_code: int, user_status_codes: tuple):
+    """
+    Check if response status code match to status codes filtered by user
+
+    Parameters:
+    -----------
+    user_status_codes:
+        Tuple of status codes to exclude and status codes that should match (exclude status codes, match status codes)
+
+    -----------
+    Returns:
+        bool: True if status code matches
+    """
+    response_status_code = int(response_status_code)
+    http_status_codes = [code.value for code in HTTPStatus]
+    exclude_status_code = [code.split('-')
+                           for code in user_status_codes[0].split(',')] if user_status_codes[0] is not None else []
+    match_status_code = [code.split('-')
+                         for code in user_status_codes[1].split(',')] if user_status_codes[1] is not None else []
+
+    for code in exclude_status_code:
+        if len(code) == 1:
+            if int(code[0]) in http_status_codes:
+                http_status_codes.remove(int(code[0]))
+        if len(code) == 2:
+            max_status_code, min_status_code = max(int(code[0]), int(code[1])), min(int(code[0]), int(code[1]))
+            http_status_codes = [n for n in http_status_codes if n < min_status_code or n > max_status_code]
+
+    tmp = [] if len(match_status_code) > 0 else http_status_codes
+    for code in match_status_code:
+        if len(code) == 1:
+            if int(code[0]) in http_status_codes:
+                tmp.append(int(code[0]))
+        if len(code) == 2:
+            max_status_code, min_status_code = max(int(code[0]), int(code[1])), min(int(code[0]), int(code[1]))
+            tmp += [n for n in http_status_codes if min_status_code <= n <= max_status_code]
+    http_status_codes = tmp
+
+    return response_status_code in http_status_codes
 
 
 def main():
@@ -236,10 +301,12 @@ def main():
     args = parser.parse_args()
     element = args.element
     method = args.method
+    status_codes = (args.exclude_status_code, args.match_status_code)
     filename = args_filter(parser, args.url, args.file)
     urls = read_urls(filename)
     path = create_output_directory(args.dir)
     urllib3.disable_warnings()
+    filter_status_codes(200,  status_codes)
     for url in urls:
         if not is_url(url):
             print('\033[91m' + url + ' is not valid' + '\033[0m')
@@ -247,7 +314,8 @@ def main():
 
         if method == 'GET':
             result = get(url, element)
-            save_response(url, path, method, result)
+            if filter_status_codes(result['status_code'], status_codes):
+                save_response(url, path, method, result)
 
 
 if __name__ == '__main__':

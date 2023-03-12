@@ -5,16 +5,17 @@ from unittest.mock import patch
 import httpsend
 import random
 import string
+import urllib3
 
 
 class TestHttpsend(TestCase):
-
     dirs_to_remove = []
 
     @classmethod
     def setUpClass(cls):
         cls.url = 'https://example.com'
         cls.filename = 'input-files/test_read_urls.txt'
+        urllib3.disable_warnings()
 
     @classmethod
     def tearDownClass(cls):
@@ -95,3 +96,24 @@ class TestHttpsend(TestCase):
 
         self.assertEqual(result1, dir_name1)
         self.assertEqual(result2, dir_name2)
+
+    def test_filter_status_codes_true(self):
+        response_status_code = 200
+        match_status_codes = [None, '200', '100,200,300', '200-300', '200,200,200', '200-200', '300-100']
+        exclude_status_codes = [None, '100', '100,300,301,400', '300-400,500', '300,300', '400-400,400']
+        for i in range(len(match_status_codes)):
+            for j in range(len(exclude_status_codes)):
+                status_codes = (exclude_status_codes[j], match_status_codes[i])
+                result = httpsend.filter_status_codes(response_status_code, status_codes)
+                self.assertTrue(result)
+
+    def test_filter_status_codes_false(self):
+        response_status_code = 200
+        match_status_codes = ['100', '100,201,300,301', '300-400,100,500', None, '200']
+        # exclude status codes overrides match status codes
+        exclude_status_codes = ['200', '100,200,300', '100-300', '200-200', '200,200,200', '300-200']
+        for i in range(len(match_status_codes)):
+            for j in range(len(exclude_status_codes)):
+                status_codes = (exclude_status_codes[j], match_status_codes[i])
+                result = httpsend.filter_status_codes(response_status_code, status_codes)
+                self.assertFalse(result)
