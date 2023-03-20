@@ -305,7 +305,7 @@ def filter_status_codes(response_status_code: int, user_status_codes: tuple):
     return response_status_code in http_status_codes
 
 
-def main():
+def get_args():
     parser = get_parser()
     args = parser.parse_args()
     element = args.element
@@ -314,16 +314,28 @@ def main():
     filename = args_filter(parser, args.url, args.file)
     urls = read_urls(filename)
     path = create_output_directory(args.dir)
+
+    return {'element': element, 'method': method, 'status_codes': status_codes, 'urls': urls, 'path': path}
+
+
+def send_request(args, url):
+    if args['method'] == 'GET':
+        result = get(url, args['element'])
+        if filter_status_codes(result['status_code'], args['status_codes']):
+            save_response(url, args['path'], args['method'], result)
+
+
+def main():
+
     urllib3.disable_warnings()
-    for url in urls:
+    args = get_args()
+
+    for url in args['urls']:
         if not is_url(url):
             print('\033[91m' + url + ' is not valid' + '\033[0m')
             continue
 
-        if method == 'GET':
-            result = get(url, element)
-            if filter_status_codes(result['status_code'], status_codes):
-                save_response(url, path, method, result)
+        send_request(args, url)
 
 
 if __name__ == '__main__':

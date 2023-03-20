@@ -1,7 +1,7 @@
 import base64
 import os
 from unittest import TestCase
-from unittest.mock import patch
+import mock
 import httpsend
 import random
 import string
@@ -49,7 +49,7 @@ class TestHttpsend(TestCase):
         self.assertEqual(urls[0], 'https://example.com')
         self.assertEqual(urls[1], 'https://google.com')
 
-    @patch('builtins.open')
+    @mock.patch('builtins.open')
     def test_read_urls_open(self, mock_system):
         httpsend.read_urls(self.filename)
         mock_system.assert_called()
@@ -117,3 +117,17 @@ class TestHttpsend(TestCase):
                 status_codes = (exclude_status_codes[j], match_status_codes[i])
                 result = httpsend.filter_status_codes(response_status_code, status_codes)
                 self.assertFalse(result)
+
+    @mock.patch('httpsend.get')
+    @mock.patch('httpsend.filter_status_codes')
+    @mock.patch('httpsend.save_response')
+    def test_send_request(self, mock_get, mock_codes, mock_response):
+        status_codes = (None, None)
+        urls = [self.url]
+        path = httpsend.create_output_directory('output-files/')
+        self.dirs_to_remove.append(path)
+        args = {'element': 'all', 'method': 'GET', 'status_codes': status_codes, 'urls': urls, 'path': path}
+        httpsend.send_request(args, urls[0])
+        mock_get.assert_called()
+        mock_codes.assert_called()
+        mock_response.assert_called()
