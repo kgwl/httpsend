@@ -1,11 +1,40 @@
 import base64
 import os
+import unittest
 from unittest import TestCase
 import mock
 import httpsend
 import random
 import string
 import urllib3
+from aiohttp import ClientSession
+from unittest.mock import Mock, AsyncMock
+
+
+async def mock_response():
+    response = Mock(spec=ClientSession)
+    response.status = 200
+    response.headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                      '(KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
+    response.cookies = {'session_id': '123abc', 'username': 'johndoe'}
+    response.text = AsyncMock(return_value='{"message": "Hello, World!"}')
+    return response
+
+
+class TestFormatResponse(unittest.IsolatedAsyncioTestCase):
+
+    async def test_format_response_headers(self):
+        response = await mock_response()
+        result = await httpsend.format_response('all', response)
+        self.assertEqual(result['status_code'], 200)
+        self.assertEqual(result['headers'], "Content-Type: application/json\nUser-Agent: "
+                                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                            "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                            "Chrome/58.0.3029.110 Safari/537.36\n")
+        self.assertEqual(result['text'], '{"message": "Hello, World!"}')
+        self.assertEqual(result['cookies'], "{'session_id': '123abc', 'username': 'johndoe'}")
 
 
 class TestHttpsend(TestCase):
@@ -21,14 +50,6 @@ class TestHttpsend(TestCase):
     def tearDownClass(cls):
         for dir_name in cls.dirs_to_remove:
             os.removedirs(dir_name)
-
-    def test_get_type(self):
-        self.response = httpsend.get(url=self.url, http_choice='all')
-        self.assertEqual(type(self.response), dict)
-
-    def test_get_choice(self):
-        self.response = httpsend.get(url=self.url, http_choice='text')
-        self.assertEqual(list(self.response.keys())[0], 'text')
 
     def test_save(self):
         directory = 'output-files/'
@@ -118,16 +139,6 @@ class TestHttpsend(TestCase):
                 result = httpsend.filter_status_codes(response_status_code, status_codes)
                 self.assertFalse(result)
 
-    @mock.patch('httpsend.get')
-    @mock.patch('httpsend.filter_status_codes')
-    @mock.patch('httpsend.save_response')
-    def test_send_request(self, mock_get, mock_codes, mock_response):
-        status_codes = (None, None)
-        urls = [self.url]
-        path = httpsend.create_output_directory('output-files/')
-        self.dirs_to_remove.append(path)
-        args = {'element': 'all', 'method': 'GET', 'status_codes': status_codes, 'urls': urls, 'path': path}
-        httpsend.send_request(args, urls[0])
-        mock_get.assert_called()
-        mock_codes.assert_called()
-        mock_response.assert_called()
+
+if __name__ == '__main__':
+    unittest.main()

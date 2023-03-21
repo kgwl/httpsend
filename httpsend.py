@@ -1,10 +1,11 @@
 from urllib.parse import urlparse
 import urllib3
-import requests
 import argparse
 import validators
 import os
 from http import HTTPStatus
+import asyncio
+from aiohttp import ClientSession
 
 
 def get_parser():
@@ -85,40 +86,38 @@ def get_parser():
     return parser
 
 
-def get(url, http_choice: str):
+async def format_response(element: str, response: ClientSession.get):
     """
-    Sends http GET method and returns text, cookies and/or headers.
+    Get from response only selected items
 
     Parameters:
     -----------
-    url:
-        URL where request should be sent.
-
     http_choice:
         What element of http should be return (cookies, headers, text or all of them).
+
+    response:
+        aiohttp.ClientSession.get object
     -----------
     Returns:
         dictionary: Selected http elements (cookies, headers,  text).
     """
 
-    response = requests.get(url=url, verify=False)
     headers_result = ''
     cookies_result = ''
     text_result = ''
-    status_code = response.status_code
+    status_code = response.status
 
-    if http_choice == 'headers' or http_choice == 'all':
+    if element == 'headers' or element == 'all':
         headers = response.headers
         for header in headers:
             headers_result += header + ': ' + headers[header] + '\n'
 
-    if http_choice == 'cookies' or http_choice == 'all':
+    if element == 'cookies' or element == 'all':
         cookies = response.cookies
-        for cookie in cookies:
-            cookies_result += cookie.name + '=' + cookie.value + '\n'
+        cookies_result = str(cookies)
 
-    if http_choice == 'text' or http_choice == 'all':
-        text_result += response.text
+    if element == 'text' or element == 'all':
+        text_result += await response.text()
 
     result = {'headers': headers_result, 'cookies': cookies_result, 'text': text_result, 'status_code': status_code}
     for key, value in result.copy().items():
@@ -318,11 +317,13 @@ def get_args():
     return {'element': element, 'method': method, 'status_codes': status_codes, 'urls': urls, 'path': path}
 
 
-def send_request(args, url):
-    if args['method'] == 'GET':
-        result = get(url, args['element'])
-        if filter_status_codes(result['status_code'], args['status_codes']):
-            save_response(url, args['path'], args['method'], result)
+async def send_request(args, url):
+    async with ClientSession() as session:
+        if args['method'] == 'GET':
+            async with session.get(url) as response:
+                result = await format_response(args['element'], response)
+                if filter_status_codes(result['status_code'], args['status_codes']):
+                    save_response(url, args['path'], args['method'], result)
 
 
 def main():
@@ -330,12 +331,17 @@ def main():
     urllib3.disable_warnings()
     args = get_args()
 
+    loop = asyncio.get_event_loop()
+    tasks = []
+
     for url in args['urls']:
         if not is_url(url):
             print('\033[91m' + url + ' is not valid' + '\033[0m')
             continue
+        task = asyncio.ensure_future(send_request(args, url))
+        tasks.append(task)
 
-        send_request(args, url)
+    loop.run_until_complete(asyncio.wait(tasks))
 
 
 if __name__ == '__main__':
