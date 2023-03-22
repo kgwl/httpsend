@@ -8,7 +8,7 @@ import random
 import string
 import urllib3
 from aiohttp import ClientSession
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock, AsyncMock, patch
 
 
 async def mock_response():
@@ -23,7 +23,7 @@ async def mock_response():
     return response
 
 
-class TestFormatResponse(unittest.IsolatedAsyncioTestCase):
+class TestHttpsendAsync(unittest.IsolatedAsyncioTestCase):
 
     async def test_format_response_headers(self):
         response = await mock_response()
@@ -35,6 +35,23 @@ class TestFormatResponse(unittest.IsolatedAsyncioTestCase):
                                             "Chrome/58.0.3029.110 Safari/537.36\n")
         self.assertEqual(result['text'], '{"message": "Hello, World!"}')
         self.assertEqual(result['cookies'], "{'session_id': '123abc', 'username': 'johndoe'}")
+
+    async def test_send_request_true(self):
+        url = 'http://example.com'
+        args = {'element': 'all', 'method': 'GET', 'status_codes': (None, None), 'urls': [url], 'path': 'output-files/'}
+
+        with patch('httpsend.save_response') as request:
+            await httpsend.send_request(args, url)
+            request.assert_called()
+
+    async def test_send_request_false(self):
+        url = 'http://example.com'
+        args = {'element': 'all', 'method': 'GET',
+                'status_codes': ('200', None), 'urls': [url], 'path': 'output-files/'}
+
+        with patch('httpsend.save_response') as request:
+            await httpsend.send_request(args, url)
+            self.assertFalse(request.called)
 
 
 class TestHttpsend(TestCase):
