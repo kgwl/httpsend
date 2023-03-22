@@ -5,7 +5,7 @@ import validators
 import os
 from http import HTTPStatus
 import asyncio
-from aiohttp import ClientSession
+from aiohttp import ClientSession, TCPConnector
 
 
 def get_parser():
@@ -318,9 +318,11 @@ def get_args():
 
 
 async def send_request(args, url):
-    async with ClientSession() as session:
+    async with ClientSession(connector=TCPConnector(
+        ssl=False
+    )) as session:
         if args['method'] == 'GET':
-            async with session.get(url) as response:
+            async with session.get(url=url) as response:
                 result = await format_response(args['element'], response)
                 if filter_status_codes(result['status_code'], args['status_codes']):
                     save_response(url, args['path'], args['method'], result)
