@@ -276,30 +276,25 @@ def filter_status_codes(response_status_code: int, user_status_codes: tuple):
     Returns:
         bool: True if status code matches
     """
-    response_status_code = int(response_status_code)
     http_status_codes = [code.value for code in HTTPStatus]
-    exclude_status_code = [code.split('-')
-                           for code in user_status_codes[0].split(',')] if user_status_codes[0] is not None else []
-    match_status_code = [code.split('-')
-                         for code in user_status_codes[1].split(',')] if user_status_codes[1] is not None else []
 
-    for code in exclude_status_code:
-        if len(code) == 1:
-            if int(code[0]) in http_status_codes:
-                http_status_codes.remove(int(code[0]))
-        if len(code) == 2:
-            max_status_code, min_status_code = max(int(code[0]), int(code[1])), min(int(code[0]), int(code[1]))
-            http_status_codes = [n for n in http_status_codes if n < min_status_code or n > max_status_code]
+    def get_codes(status_codes):
+        result = []
+        for code in status_codes:
+            if len(code) == 1:
+                if int(code[0]) in http_status_codes:
+                    result.append(int(code[0]))
+            if len(code) == 2:
+                max_status_code, min_status_code = max(int(code[0]), int(code[1])), min(int(code[0]), int(code[1]))
+                result += [n for n in http_status_codes if min_status_code <= n <= max_status_code]
+        return result
 
-    tmp = [] if len(match_status_code) > 0 else http_status_codes
-    for code in match_status_code:
-        if len(code) == 1:
-            if int(code[0]) in http_status_codes:
-                tmp.append(int(code[0]))
-        if len(code) == 2:
-            max_status_code, min_status_code = max(int(code[0]), int(code[1])), min(int(code[0]), int(code[1]))
-            tmp += [n for n in http_status_codes if min_status_code <= n <= max_status_code]
-    http_status_codes = tmp
+    exclude_status_code = [code.split('-') for code in user_status_codes[0].split(',')] if user_status_codes[0] is not None else []
+    match_status_code = [code.split('-') for code in user_status_codes[1].split(',')] if user_status_codes[1] is not None else []
+
+    http_status_codes = get_codes(match_status_code) if len(match_status_code) > 0 else http_status_codes
+    exclude_status_code = get_codes(exclude_status_code)
+    http_status_codes = list(set(http_status_codes) - set(exclude_status_code))
 
     return response_status_code in http_status_codes
 
