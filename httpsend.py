@@ -76,6 +76,14 @@ def get_parser():
         help='Http headers to use'
     )
 
+    parser.add_argument(
+        '-A',
+        dest='agent',
+        metavar='User-agent',
+        default='httpsend',
+        help='User-agent header. Default: httpsend'
+    )
+
     filter_options.add_argument(
         '-fs',
         metavar='CODE',
@@ -313,6 +321,8 @@ def get_headers(headers):
         for header in headers_list:
             key, value = header.split(':')
             headers_dict[key.strip()] = value.strip()
+    except AttributeError:
+        return {}
     except ValueError:
         return {}
     return headers_dict
@@ -328,7 +338,7 @@ def get_args():
     urls = read_urls(filename)
     path = create_output_directory(args.dir)
     headers = get_headers(args.header)
-
+    headers['User-Agent'] = args.agent
     return {'element': element, 'method': method, 'status_codes': status_codes, 'urls': urls, 'path': path, 'headers': headers}
 
 
