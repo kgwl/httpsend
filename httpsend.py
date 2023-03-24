@@ -259,7 +259,7 @@ def save_response(url, path, method, response):
 
     for key in response.keys():
         name = filename + '.' + method + '.' + key
-        print('[' + str(status_code) + '] saved  ', name)
+        print('[' + str(status_code) + ']  ' + name + '\033[92m' + ' saved' + '\033[0m')
         save(name, response[key])
 
 
@@ -319,6 +319,8 @@ async def send_request(args, url):
                 result = await format_response(args['element'], response)
                 if filter_status_codes(result['status_code'], args['status_codes']):
                     save_response(url, args['path'], args['method'], result)
+                else:
+                    print('\033[93m' + '[' + str(response.status) + '] ' + url + ' filtered' + '\033[0m')
 
 
 def main():
