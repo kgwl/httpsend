@@ -27,7 +27,7 @@ def get_parser():
     match_options = parser.add_argument_group('match options')
 
     parser.add_argument(
-        '-h',
+        '--help',
         action='help',
         default=argparse.SUPPRESS,
         help='Show this help message and exit')
@@ -67,6 +67,13 @@ def get_parser():
         dest='dir',
         metavar='DIR',
         help='Output directory'
+    )
+
+    parser.add_argument(
+        '-H',
+        dest='header',
+        metavar='HEADER',
+        help='Http headers to use'
     )
 
     filter_options.add_argument(
@@ -299,6 +306,18 @@ def filter_status_codes(response_status_code: int, user_status_codes: tuple):
     return response_status_code in http_status_codes
 
 
+def get_headers(headers):
+    headers_dict = {}
+    try:
+        headers_list = headers.split(',')
+        for header in headers_list:
+            key, value = header.split(':')
+            headers_dict[key.strip()] = value.strip()
+    except ValueError:
+        return {}
+    return headers_dict
+
+
 def get_args():
     parser = get_parser()
     args = parser.parse_args()
@@ -308,12 +327,13 @@ def get_args():
     filename = args_filter(parser, args.url, args.file)
     urls = read_urls(filename)
     path = create_output_directory(args.dir)
+    headers = get_headers(args.header)
 
-    return {'element': element, 'method': method, 'status_codes': status_codes, 'urls': urls, 'path': path}
+    return {'element': element, 'method': method, 'status_codes': status_codes, 'urls': urls, 'path': path, 'headers': headers}
 
 
 async def send_request(args, url):
-    async with ClientSession(connector=TCPConnector(ssl=False)) as session:
+    async with ClientSession(headers=args['headers'], connector=TCPConnector(ssl=False)) as session:
         if args['method'] == 'GET':
             async with await session.get(url=url) as response:
                 result = await format_response(args['element'], response)

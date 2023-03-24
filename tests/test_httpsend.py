@@ -38,7 +38,7 @@ class TestHttpsendAsync(unittest.IsolatedAsyncioTestCase):
 
     async def test_send_request_true(self):
         url = 'http://example.com'
-        args = {'element': 'all', 'method': 'GET', 'status_codes': (None, None), 'urls': [url], 'path': 'output-files/'}
+        args = {'element': 'all', 'method': 'GET', 'status_codes': (None, None), 'urls': [url], 'path': 'output-files/', 'headers': {'x': 'test'}}
 
         with patch('httpsend.save_response') as request:
             await httpsend.send_request(args, url)
@@ -47,7 +47,7 @@ class TestHttpsendAsync(unittest.IsolatedAsyncioTestCase):
     async def test_send_request_false(self):
         url = 'http://example.com'
         args = {'element': 'all', 'method': 'GET',
-                'status_codes': ('200', None), 'urls': [url], 'path': 'output-files/'}
+                'status_codes': ('200', None), 'urls': [url], 'path': 'output-files/', 'headers': {'x': 'test'}}
 
         with patch('httpsend.save_response') as request:
             await httpsend.send_request(args, url)
@@ -155,6 +155,12 @@ class TestHttpsend(TestCase):
                 status_codes = (exclude_status_codes[j], match_status_codes[i])
                 result = httpsend.filter_status_codes(response_status_code, status_codes)
                 self.assertFalse(result)
+
+    def test_get_headers(self):
+        header = 'x: test'
+        expected = {'x': 'test'}
+        result = httpsend.get_headers(header)
+        self.assertEqual(result, expected)
 
 
 if __name__ == '__main__':
