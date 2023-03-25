@@ -315,6 +315,19 @@ def filter_status_codes(response_status_code: int, user_status_codes: tuple):
 
 
 def get_headers(headers):
+    """
+    Format http headers from string to dictionary
+
+    Parameters:
+    -----------
+    headers:
+        str: HTTP headers given by user
+
+    -----------
+    Returns:
+        dict: HTTP headers
+
+    """
     headers_dict = {}
     try:
         headers_list = headers.split(',')

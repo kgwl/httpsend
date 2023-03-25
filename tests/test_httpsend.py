@@ -157,10 +157,19 @@ class TestHttpsend(TestCase):
                 self.assertFalse(result)
 
     def test_get_headers(self):
-        header = 'x: test'
-        expected = {'x': 'test'}
-        result = httpsend.get_headers(header)
-        self.assertEqual(result, expected)
+        test_cases = [
+            ("", {}),
+            ("Content-Type: application/json, Authorization: Token 12345",
+             {"Content-Type": "application/json", "Authorization": "Token 12345"}),
+            ("Content-Type: application/json, Content-Type: text/plain",
+             {"Content-Type": "text/plain"}),
+            ("Content-Type, application/json", {}),
+            (None, {}),
+            (123, {})
+        ]
+        for headers, expected_output in test_cases:
+            with self.subTest(headers=headers, expected_output=expected_output):
+                self.assertEqual(httpsend.get_headers(headers), expected_output)
 
 
 if __name__ == '__main__':
