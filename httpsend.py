@@ -50,8 +50,16 @@ def get_parser():
         '-X',
         dest='method',
         default='GET',
-        choices=['GET'],
+        choices=['GET', 'POST'],
         help='HTTP method to use. Default: GET'
+    )
+
+    parser.add_argument(
+        '-d',
+        metavar='DATA',
+        dest='data',
+        help='POST data',
+        default=None
     )
 
     parser.add_argument(
@@ -63,7 +71,7 @@ def get_parser():
     )
 
     parser.add_argument(
-        '-d',
+        '-o',
         dest='dir',
         metavar='DIR',
         help='Output directory'
@@ -191,7 +199,7 @@ def is_url(url: str):
     return validators.url(url)
 
 
-def args_filter(parser, single_url, url_file):
+def args_filter(single_url, url_file):
     """
     From URL and FILE argument choose one which is not null. If both arguments are provided then program exits with
     an error.
@@ -211,8 +219,6 @@ def args_filter(parser, single_url, url_file):
     Returns:
         str: Argument that is not null
     """
-    if single_url is not None and url_file is not None:
-        parser.error('You cannot pass [-u URL] and [-f FILE] arguments together')
 
     return single_url if single_url is not None else url_file
 
@@ -346,19 +352,34 @@ def get_args():
     args = parser.parse_args()
     element = args.element
     method = args.method
+    data = args.data
+    if method != 'POST' and data is not None:
+        parser.error('You cannot pass [-d DATA] without selected POST method.Type: -X POST')
     status_codes = (args.exclude_status_code, args.match_status_code)
-    filename = args_filter(parser, args.url, args.file)
+
+    filename = args_filter(args.url, args.file)
+    if args.url is not None and args.file is not None:
+        parser.error('You cannot pass [-u URL] and [-f FILE] arguments together')
+
     urls = read_urls(filename)
     path = create_output_directory(args.dir)
+
     headers = get_headers(args.header)
     headers['User-Agent'] = args.agent
-    return {'element': element, 'method': method, 'status_codes': status_codes, 'urls': urls, 'path': path, 'headers': headers}
+    return {'element': element, 'method': method, 'status_codes': status_codes, 'urls': urls, 'path': path, 'headers': headers, 'data': data}
 
 
 async def send_request(args, url):
     async with ClientSession(headers=args['headers'], connector=TCPConnector(ssl=False)) as session:
         if args['method'] == 'GET':
             async with await session.get(url=url) as response:
+                result = await format_response(args['element'], response)
+                if filter_status_codes(result['status_code'], args['status_codes']):
+                    save_response(url, args['path'], args['method'], result)
+                else:
+                    print('\033[93m' + '[' + str(response.status) + '] ' + url + ' filtered' + '\033[0m')
+        elif args['method'] == 'POST':
+            async with session.post(url=url, data=args['data']) as response:
                 result = await format_response(args['element'], response)
                 if filter_status_codes(result['status_code'], args['status_codes']):
                     save_response(url, args['path'], args['method'], result)

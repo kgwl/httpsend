@@ -53,6 +53,22 @@ class TestHttpsendAsync(unittest.IsolatedAsyncioTestCase):
             await httpsend.send_request(args, url)
             self.assertFalse(request.called)
 
+    async def test_send_request_post(self):
+        url = 'http://example.com'
+        args = {
+            'element': 'all',
+            'method': 'POST',
+            'status_codes': (None, None),
+            'urls': [url],
+            'path': 'output-files/',
+            'headers': {'Content-Type': 'application/json'},
+            'data': 'test'
+        }
+
+        with patch('httpsend.save_response') as request:
+            await httpsend.send_request(args, url)
+            request.assert_called()
+
 
 class TestHttpsend(TestCase):
     dirs_to_remove = []
