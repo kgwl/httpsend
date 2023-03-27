@@ -375,16 +375,22 @@ async def send_request(args, url):
             async with await session.get(url=url) as response:
                 result = await format_response(args['element'], response)
                 if filter_status_codes(result['status_code'], args['status_codes']):
-                    save_response(url, args['path'], args['method'], result)
+                    return result
                 else:
                     print('\033[93m' + '[' + str(response.status) + '] ' + url + ' filtered' + '\033[0m')
         elif args['method'] == 'POST':
             async with session.post(url=url, data=args['data']) as response:
                 result = await format_response(args['element'], response)
                 if filter_status_codes(result['status_code'], args['status_codes']):
-                    save_response(url, args['path'], args['method'], result)
+                    return result
                 else:
                     print('\033[93m' + '[' + str(response.status) + '] ' + url + ' filtered' + '\033[0m')
+
+
+async def request_manager(args, url):
+    response = await send_request(args, url)
+    if response is not None:
+        save_response(url, args['path'], args['method'], response)
 
 
 def main():
@@ -399,7 +405,7 @@ def main():
         if not is_url(url):
             print('\033[91m' + url + ' is not valid' + '\033[0m')
             continue
-        task = asyncio.ensure_future(send_request(args, url))
+        task = asyncio.ensure_future(request_manager(args, url))
         tasks.append(task)
 
     loop.run_until_complete(asyncio.wait(tasks))
