@@ -12,6 +12,6 @@ pip3 install -r requirements.txt
 
 #### Example usage:
 ```
-└─$ python3 /home/kgwl/PycharmProjects/httpsend/httpsend.py -u https://google.com -E headers -X GET
-[200]  /home/kgwl/Workspace/google.com/httpsend-output/google.com.GET.headers saved
+└─$ python3 httpsend.py -u https://google.com -E headers -X GET
+[200]  /foo/bar/httpsend-output/google.com.GET.headers saved
 ```
